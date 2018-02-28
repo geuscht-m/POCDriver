@@ -62,9 +62,10 @@ public class POCTestReporter implements Runnable {
                 .GetOpsPerSecondLastInterval();
         String[] opTypes = POCTestResults.opTypes;
 
+	String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
         for (String o : opTypes) {
-            System.out.format("%d %s per second since last report ",
-                    results.get(o), o);
+            System.out.format("%s: %d %s per second since last report ",
+			      timeStamp, results.get(o), o);
 
             if (outfile != null) {
                 Date todaysdate = new Date();
