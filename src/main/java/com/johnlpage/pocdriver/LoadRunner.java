@@ -10,6 +10,8 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import org.bson.Document;
 
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -34,9 +36,10 @@ public class LoadRunner {
             coll.drop();
         }
 
-
+        TestRecord testRecord = new TestRecord(testOpts);
+        List<String> fields = testRecord.listFields();
         for (int x = 0; x < testOpts.secondaryidx; x++) {
-            coll.createIndex(new Document("fld" + x, 1));
+            coll.createIndex(new Document(fields.get(x), 1));
         }
         if (testOpts.fulltext) {
             IndexOptions options = new IndexOptions();
@@ -116,7 +119,7 @@ public class LoadRunner {
 
         PrepareSystem(testOpts, testResults);
         // Report on progress by looking at testResults
-        Runnable reporter = new POCTestReporter(testResults, mongoClient, testOpts);
+        POCTestReporter reporter = new POCTestReporter(testResults, mongoClient, testOpts);
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(reporter, 0, testOpts.reportTime, TimeUnit.SECONDS);
 
@@ -145,6 +148,9 @@ public class LoadRunner {
             System.out.println(e.getMessage());
 
         }
+
+        // do final report
+        reporter.finalReport();
     }
 
     LoadRunner(POCTestOptions testOpts) {

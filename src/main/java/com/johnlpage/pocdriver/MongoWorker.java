@@ -209,14 +209,13 @@ public class MongoWorker implements Runnable {
         Date starttime = new Date();
 
         //This is where ALL writes are happening
-
         //So this can fail part way through if we have a failover
         //In which case we resubmit it
 
         boolean submitted = false;
         BulkWriteResult bwResult = null;
 
-        while (!submitted) {
+        while (!submitted && !bulkWriter.isEmpty()) {  // can be empty if we removed a Dupe key error
             try {
                 submitted = true;
                 bwResult = coll.bulkWrite(bulkWriter);
@@ -261,7 +260,11 @@ public class MongoWorker implements Runnable {
                         System.out.println("Cannot find failed op in batch!");
                     }
                 } else {
-                    System.out.println(error);
+                    // Some other error occurred - possibly MongoCommandException, MongoTimeoutException
+                    System.out.println(e.getClass().getSimpleName() + ": " + error);
+                    // Print a full stacktrace since we're in debug mode
+                    if (testOpts.debug)
+                        e.printStackTrace();
                 }
                 //System.out.println("No result returned");
                 submitted = false;
@@ -417,7 +420,7 @@ public class MongoWorker implements Runnable {
         int[] arr = new int[2];
         arr[0] = testOpts.arraytop;
         arr[1] = testOpts.arraynext;
-        return new TestRecord(testOpts.numFields, testOpts.textFieldLen,
+        return new TestRecord(testOpts.numFields, testOpts.depth, testOpts.textFieldLen,
                 workerID, sequence++, testOpts.NUMBER_SIZE,
                 arr, testOpts.blobSize);
     }
@@ -539,7 +542,8 @@ public class MongoWorker implements Runnable {
 
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
-            e.printStackTrace();
+            if (testOpts.debug)
+                e.printStackTrace();
         }
     }
 }

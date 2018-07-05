@@ -52,7 +52,7 @@ public class POCDriver {
         int[] arr = new int[2];
         arr[0] = testOpts.arraytop;
         arr[1] = testOpts.arraynext;
-        tr = new TestRecord(testOpts.numFields, testOpts.textFieldLen,
+        tr = new TestRecord(testOpts.numFields, testOpts.depth, testOpts.textFieldLen,
                 1, 12345678, testOpts.NUMBER_SIZE, arr, testOpts.blobSize);
         //System.out.println(tr);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -94,7 +94,7 @@ public class POCDriver {
         new DocumentCodec().encode(binaryWriter, tr.internalDoc, EncoderContext.builder().build());
         int length = binaryWriter.getBsonOutput().getSize();
 
-        System.out.println(String.format("Records are %.2f KB each as BSON", (float) length / 1024));
+        System.out.println(String.format("Documents are %.2f KB each as BSON", (float) length / 1024));
     }
 
 }
