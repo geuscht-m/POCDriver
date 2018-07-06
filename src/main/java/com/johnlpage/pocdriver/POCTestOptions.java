@@ -63,6 +63,8 @@ public class POCTestOptions {
 	boolean helpOnly = false;
 	String connectionDetails = "mongodb://localhost:27017";
 	boolean fulltext;
+
+    String JSONlog = null;
 	
 	POCTestOptions(String[] args) throws ParseException
 	{
@@ -104,6 +106,7 @@ public class POCTestOptions {
 		cliopt.addOption(null,"updatefields",true,"Number of fields to update (default 1)");
 		cliopt.addOption(null,"projectfields",true,"Number of fields to project in finds (default 0, which is no projection)");				
 		cliopt.addOption(null,"debug",false,"Show more detail if exceptions occur during inserts/queries");
+		cliopt.addOption(null,"jsonlog",true,"Log output to JSON format log file");
 
 		CommandLine cmd = parser.parse(cliopt, args);
 		
@@ -299,6 +302,10 @@ public class POCTestOptions {
 		if(cmd.hasOption("debug"))
 		{
 			debug = true;
+		}
+
+		if(cmd.hasOption("jsonlog")) {
+		    JSONlog = cmd.getOptionValue("jsonlog");
 		}
 	}
 }

@@ -6,6 +6,8 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -33,16 +35,47 @@ public class POCTestReporter implements Runnable {
 
 
     private void logData() {
+	class JSONResult {
+	    public JSONResult(long ops, double fast, long slow) {
+		numOps = ops;
+		fastOpsPercent = fast;
+		slowThreshold = slow;
+	    }
+	    public long numOps;
+	    public double fastOpsPercent;
+	    public long slowThreshold;
+	}
+	class JSONResults {
+	    public JSONResults(Date d) {
+		ts = d;
+		results = new HashMap<String, JSONResult>();
+	    }
+	    public Date ts;
+	    public HashMap<String, JSONResult> results;
+	}
+
+	ObjectMapper om = new ObjectMapper();
+	
         PrintWriter outfile = null;
-
+	PrintWriter outfileJSON = null;
+	
         if (testOpts.logfile != null) {
-
             try {
                 outfile = new PrintWriter(new BufferedWriter(new FileWriter(testOpts.logfile, true)));
             } catch (IOException e) {
                 System.out.println(e.getMessage());
             }
         }
+
+	if (testOpts.JSONlog != null) {
+	    try {
+		outfileJSON = new PrintWriter(/*new BufferedWriter(*/new FileWriter(testOpts.JSONlog, true)/*)*/);
+		//System.out.format("Logging to JSON log file %s\n", testOpts.JSONlog);
+	    }
+	    catch (IOException e) {
+		System.err.println(e.getMessage());
+	    }
+	}
 
         Long insertsDone = testResults.GetOpsDone("inserts");
         if (testResults.GetSecondsElapsed() < testOpts.reportTime)
@@ -66,9 +99,13 @@ public class POCTestReporter implements Runnable {
         String[] opTypes = POCTestResults.opTypes;
 
 	String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+	JSONResults res = new JSONResults(new Date());
+	
         for (String o : opTypes) {
+	    Long result = results.get(o);
+	    JSONResult r = new JSONResult(result, 0, testOpts.slowThreshold);
             System.out.format("%s: %,d %s per second since last report ",
-			      timeStamp, results.get(o), o);
+			      timeStamp, result, o);
 
             if (outfile != null) {
                 String str = DF_FULL.format(todaysdate);
@@ -80,6 +117,7 @@ public class POCTestReporter implements Runnable {
             if (opsDone > 0) {
                 Double fastops = 100 - (testResults.GetSlowOps(o) * 100.0)
                         / opsDone;
+		r.fastOpsPercent = fastops;
                 System.out.format("%.2f %% in under %d milliseconds", fastops,
                         testOpts.slowThreshold);
                 if (outfile != null) {
@@ -90,15 +128,29 @@ public class POCTestReporter implements Runnable {
                 if (outfile != null) {
                     outfile.format(",%d", 100);
                 }
+		r.fastOpsPercent = 100;
             }
             System.out.println();
-
+	    
+	    res.results.put(o, r);
         }
-        if (outfile != null) {
+	
+	if (outfile != null) {
             outfile.println();
             outfile.close();
         }
         System.out.println();
+	
+	try {
+	    if (outfileJSON != null) {
+		String logEntry = om.writeValueAsString(res);
+		outfileJSON.println(logEntry);
+		outfileJSON.close();
+	    }
+	}
+	catch (IOException e) {
+	    System.out.println(e.getMessage());
+	}
     }
 
     public void run() {
