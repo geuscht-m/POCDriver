@@ -25,6 +25,7 @@ public class POCTestReporter implements Runnable {
 
     private static final DateFormat DF_FULL = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private static final DateFormat DF_TIME = new SimpleDateFormat("HH:mm:ss");
+    private static final DateFormat DF_LOG  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
     POCTestReporter(POCTestResults r, MongoClient mc, POCTestOptions t) {
         mongoClient = mc;
@@ -46,11 +47,11 @@ public class POCTestReporter implements Runnable {
 	    public long slowThreshold;
 	}
 	class JSONResults {
-	    public JSONResults(Date d) {
+	    public JSONResults(String d) {
 		ts = d;
 		results = new HashMap<String, JSONResult>();
 	    }
-	    public Date ts;
+	    public String ts;
 	    public HashMap<String, JSONResult> results;
 	}
 
@@ -69,8 +70,7 @@ public class POCTestReporter implements Runnable {
 
 	if (testOpts.JSONlog != null) {
 	    try {
-		outfileJSON = new PrintWriter(/*new BufferedWriter(*/new FileWriter(testOpts.JSONlog, true)/*)*/);
-		//System.out.format("Logging to JSON log file %s\n", testOpts.JSONlog);
+		outfileJSON = new PrintWriter(new BufferedWriter(new FileWriter(testOpts.JSONlog, true)));
 	    }
 	    catch (IOException e) {
 		System.err.println(e.getMessage());
@@ -98,8 +98,8 @@ public class POCTestReporter implements Runnable {
                 .GetOpsPerSecondLastInterval();
         String[] opTypes = POCTestResults.opTypes;
 
-	String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-	JSONResults res = new JSONResults(new Date());
+	String timeStamp = DF_LOG.format(new Date());
+	JSONResults res = new JSONResults(timeStamp);
 	
         for (String o : opTypes) {
 	    Long result = results.get(o);
